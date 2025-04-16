@@ -8,6 +8,7 @@ numpy = "*"
 pandas = "*"
 scikit-learn = "*"
 torch = "*"
+imblearn = "*"
 
 [dev-packages]
 
