@@ -3,8 +3,8 @@ from torch import nn
 from src.data_processing import prepare_data
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
+from sklearn.metrics import classification_report, confusion_matrix
 
-#DODAJ WAGI KLAS DLA ZROWNOWAZENIA MODELU ALE POTEM BO NIE WIEM
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 X, Y = prepare_data()
@@ -22,18 +22,19 @@ x_train, x_test = x_train.to(device), x_test.to(device)
 y_train, y_test = y_train.to(device), y_test.to(device)
 
 
-# Aplikacja SMOTE na dane treningowe
+# - `sampling_strategy='minority'` → tylko **klasa mniejszościowa** (np. 1) będzie nadpróbkowana, aż zrówna się z klasą większościową.
+# - `random_state=42` → żeby wyniki były powtarzalne (kontrola losowości).
+# fit_resample(...) Tworzy nowe próbki klasy 1
+
 smote = SMOTE(sampling_strategy='minority', random_state=42)
 x_train_res, y_train_res = smote.fit_resample(x_train.cpu().numpy(), y_train.cpu().numpy())
 
-# Zwracamy dane do formatu tensorów
 x_train_res = torch.tensor(x_train_res, dtype=torch.float32).to(device)
 y_train_res = torch.tensor(y_train_res, dtype=torch.float32).to(device)
 
 print(f"Nowa liczba próbek klasy 1 w zbiorze treningowym: {y_train_res.sum().item()}")
 print(f"Nowa liczba próbek klasy 0 w zbiorze treningowym: {(y_train_res == 0).sum().item()}")
 
-#sequential do tworzenia warstw
 
 #ReLU dodaje nieliniowość do modelu, co pozwala na naukę bardziej złożonych funkcji.
 #relu max(0, x)
@@ -47,6 +48,17 @@ print(f"Nowa liczba próbek klasy 0 w zbiorze treningowym: {(y_train_res == 0).s
 #To tzw. "kaskadowe zwężanie" (funnel architecture) –
 # sieć zaczyna od więcej neuronów,
 # by uchwycić dużo cech, a potem je agreguje i upraszcza:
+
+
+# Jeśli wejście do warstwy ma średnią 100 i odchylenie 50,
+# BatchNorm je „spłaszczy” do czegoś bliżej średniej 0 i std 1.
+# szybciej sie uczy przez to np
+
+# Linear: oblicza wartości surowe (logity)
+#
+# BatchNorm: normalizuje je
+#
+# ReLU: nadaje nieliniowość
 
 class Model(nn.Module):
     def __init__(self):
@@ -74,18 +86,18 @@ epoches = 10000
 # pos_weight będzie równe 800 / 200 = 4.
 # Czyli błędy na klasie 1 będą 4 razy ważniejsze niż na klasie 0.
 
-# Oblicz wagę klasy 1 i od razu zrób z niej tensor na właściwym urządzeniu
 pos_weight_value = (y_train == 0).sum().item() / (y_train == 1).sum().item()
 pos_weight_value *= 5
 pos_weight = torch.tensor(pos_weight_value, device=device)
 
-# Dodaj do loss function
+
 loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01) #aktualizuje wagi sieci
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 for epoch in range(epoches):
     model.train()
-    y_logits = model(x_train).squeeze() #surowa liczba z sieci neuronowej
+    y_logits = model(x_train).squeeze()
+    #surowa liczba z sieci neuronowej
     loss = loss_function(y_logits, y_train)
 
     optimizer.zero_grad()
@@ -106,14 +118,13 @@ for epoch in range(epoches):
         y_logits_test = model(x_test)
         loss_test = loss_function(y_logits_test.squeeze(), y_test)
 
-        # Przekształcamy logity do wartości 0/1 (klasyfikacja binarna)
         y_test_pred = torch.sigmoid(y_logits_test.squeeze()) >= 0.5
+        # sigmoid zmienia logity na wartości zprzedziału(0, 1) → interpretujemy to
+        # jako prawdopodobieństwo klasy 1.
 
-        # Liczymy dokładność
         correct_test = (y_test_pred == y_test).sum().item()
         test_accuracy = correct_test / y_test.size(0)
 
-        # WYPISZ WYNIKI
         print("\n" + "=" * 50)
         print("📊 TESTOWANIE MODELU NA DANYCH TESTOWYCH:")
         print(f"🧪 Test Loss: {loss_test.item():.4f}")
@@ -121,9 +132,7 @@ for epoch in range(epoches):
         print(f"📈 Prawidłowe przewidywania: {correct_test} / {y_test.size(0)}")
         print("=" * 50 + "\n")
 
-    from sklearn.metrics import classification_report, confusion_matrix
 
-    # Konwersja tensorów na CPU i numpy
     y_test_cpu = y_test.cpu().numpy()
     y_pred_cpu = y_test_pred.cpu().numpy()
 
