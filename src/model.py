@@ -126,20 +126,20 @@ for epoch in range(epoches):
         test_accuracy = correct_test / y_test.size(0)
 
         print("\n" + "=" * 50)
-        print("📊 TESTOWANIE MODELU NA DANYCH TESTOWYCH:")
-        print(f"🧪 Test Loss: {loss_test.item():.4f}")
-        print(f"✅ Test Accuracy: {test_accuracy * 100:.2f}%")
-        print(f"📈 Prawidłowe przewidywania: {correct_test} / {y_test.size(0)}")
+        print(" TESTOWANIE MODELU NA DANYCH TESTOWYCH:")
+        print(f" Test Loss: {loss_test.item():.4f}")
+        print(f" Test Accuracy: {test_accuracy * 100:.2f}%")
+        print(f" Prawidłowe przewidywania: {correct_test} / {y_test.size(0)}")
         print("=" * 50 + "\n")
 
 
     y_test_cpu = y_test.cpu().numpy()
     y_pred_cpu = y_test_pred.cpu().numpy()
 
-    print("\n📊 Szczegółowy raport klasyfikacji:")
+    print("\n Szczegółowy raport klasyfikacji:")
     print(classification_report(y_test_cpu, y_pred_cpu, digits=4))
 
-    print("🧮 Macierz pomyłek:")
+    print(" Macierz pomyłek:")
     print(confusion_matrix(y_test_cpu, y_pred_cpu))
 
 
