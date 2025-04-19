@@ -9,6 +9,7 @@ pandas = "*"
 scikit-learn = "*"
 torch = "*"
 imblearn = "*"
+torchmetrics = "*"
 
 [dev-packages]
 

@@ -1,4 +1,4 @@
-from pandas.core.interchange.from_dataframe import categorical_column_to_series
+import os.path
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pandas as pd
@@ -22,16 +22,19 @@ def modify_data(data: pd.DataFrame)-> pd.DataFrame:
     return data_copy2
 
 def prepare_data()-> tuple:
-    data = read_csv_file(r'C:\Users\wikto\Desktop\StrokePredictionModel\data\raw\healthcare-dataset-stroke-data.csv')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(current_dir, "..", "data", "raw", "healthcare-dataset-stroke-data.csv")
+
+    data = read_csv_file(path)
     final_data = modify_data(data)
 
     stroke = final_data['stroke']
     data_copy = final_data.drop(columns=['id', 'stroke'])
 
-    #print(data_copy.head())
-    #print(stroke)
-    #print(data_copy['stroke'].value_counts())
-    #print(data_copy.count(axis = 1))
+    zmienna_age = data_copy["age"]
+    data_copy["age"] = zmienna_age / 100
+    data_copy["avg_glucose_level"] = data_copy["avg_glucose_level"] / 1000
+    data_copy["bmi"] = data_copy["bmi"] / 100
 
     return data_copy, stroke
 
